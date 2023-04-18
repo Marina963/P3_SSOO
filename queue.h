@@ -4,7 +4,10 @@
 
 struct element {
 	// Define the struct yourself
+	char *operacion;
+	int num_cuenta;	
 	int param1;
+	int param2;
 };
 
 typedef struct queue {
