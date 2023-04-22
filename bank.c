@@ -16,12 +16,7 @@ int client_numop = 0; //Contador operciones cajero (productor)
 int bank_numop = 0; //Contador operaciones trabajador (consumidor)
 int global_balence = 0; //Dinero del banco
 //int saldo_cuenta[];
-//int list_client_ops;
-
-
-
-
-
+struct element ** list_client_ops;
 
 /**
  * Entry point
@@ -59,15 +54,19 @@ int main (int argc, const char * argv[] ) {
         }
         i++;
     }
-    while(read(fichero, &buffer[i],1)> 0){
-        
-    }
-        
+    
 
     max_operaciones = atoi(buffer);
     if (max_operaciones > 200 || max_operaciones < 0){
         perror("Error numero de operaciones incorrecto");
     }
+    list_client_ops = (struct element **) malloc(max_operaciones * sizeof(struct element **));
+
+    while(read(fichero, &buffer[i],1)> 0){
+
+    }   
+
+    
 
     return 0;
 }
