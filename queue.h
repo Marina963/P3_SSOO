@@ -14,6 +14,9 @@ typedef struct queue {
 	// Define the struct yourself
 	int size;
 	struct element ** elementQueue;
+	int pos_ins;
+	int pos_bor;
+	int n_elem;
 }queue;
 
 queue* queue_init (int size);
