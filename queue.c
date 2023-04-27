@@ -25,8 +25,11 @@ queue* queue_init(int size){
 
 // To Enqueue an element
 int queue_put(queue *q, struct element* x) {
+	//printf("queue_put\n");
 	if (queue_full(q) != 0 ){
 		q->elementQueue[q->pos_ins] = x;
+		//printf("put x %p\n", x);
+		//printf("put %p\n", q->elementQueue[q->pos_ins]);
 		q->pos_ins = (q->pos_ins+ 1) % q->size;
 		q->n_elem ++;
 	}
@@ -38,10 +41,10 @@ int queue_put(queue *q, struct element* x) {
 struct element* queue_get(queue *q) {
 	struct element* element;
 	if (queue_empty(q) != 0){
-		printf("--\n");
+		//printf("--\n");
 		element = q->elementQueue[q->pos_bor];
-		printf("Hola\n");
-		free(q->elementQueue[q->pos_bor]);
+		//printf("Check\n");
+		//free(q->elementQueue[q->pos_bor]);
 		q->pos_bor = (q->pos_bor + 1) % q->size;
 		q->n_elem --;
 	}

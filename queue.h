@@ -4,7 +4,7 @@
 
 struct element {
 	// Define the struct yourself
-	char *operacion;
+	char operacion[20];
 	int num_cuenta;	
 	int elem1;
 	int elem2;
