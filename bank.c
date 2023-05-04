@@ -178,8 +178,16 @@ void cajero(){
     while(client_numop < max_operaciones){
         //Inicio de la sección critica
         pthread_mutex_lock(&mutex);
+        if (client_numop >= max_operaciones){
+            pthread_mutex_unlock(&mutex);
+            pthread_exit(0);
+        }
         //Si la cola esta llena no produce
         while(queue_full(cola) == 0){
+            if (fin==1) {                
+                pthread_mutex_unlock(&mutex);
+                pthread_exit(0);
+            }
             pthread_cond_wait(&no_lleno, &mutex);
         }
         //Inserta el dato en el buffer
@@ -198,6 +206,7 @@ void cajero(){
     pthread_mutex_lock(&mutex);
     fin=1;
     pthread_cond_broadcast(&no_vacio);
+    pthread_cond_broadcast(&no_lleno);
     pthread_mutex_unlock(&mutex);
     pthread_exit(0);
 }
@@ -208,6 +217,10 @@ void empleado(){
     while(bank_numop < max_operaciones){
         //Inicio sección crítica
         pthread_mutex_lock(&mutex);
+        if (bank_numop >= max_operaciones){
+            pthread_mutex_unlock(&mutex);
+            pthread_exit(0);
+        }
         //Si la cola está vacía no se consume
         while(queue_empty(cola) == 0){
             //Si ha acabdo se desbloquea el mutex y se matan a los hilos
@@ -237,7 +250,7 @@ void empleado(){
             traspasar(dato->num_cuenta, dato->elem1, dato->elem2);
         }
         else{
-            perror("Operacion no admitida\n");
+            perror("a");
         }
         
 
