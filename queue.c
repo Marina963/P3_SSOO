@@ -10,47 +10,38 @@
 
 //To create a queue
 queue* queue_init(int size){
-
 	queue * q = (queue *)malloc(sizeof(queue));
 
+	//Inicialización de los parámetros de la cola
 	q->pos_ins = 0;
 	q->pos_bor = 0;
 	q->n_elem = 0;
 	q->size = size;
 	q->elementQueue = (struct element ** )malloc(size*sizeof(struct element *));	
-
+	
 	return q;
 }
 
-
 // To Enqueue an element
 int queue_put(queue *q, struct element* x) {
-	//printf("queue_put\n");
 	if (queue_full(q) != 0 ){
 		q->elementQueue[q->pos_ins] = x;
-		//printf("put x %p\n", x);
-		//printf("put %p\n", q->elementQueue[q->pos_ins]);
 		q->pos_ins = (q->pos_ins+ 1) % q->size;
 		q->n_elem ++;
 	}
 	return 0;
 }
 
-
 // To Dequeue an element.
 struct element* queue_get(queue *q) {
 	struct element* element;
 	if (queue_empty(q) != 0){
-		//printf("--\n");
 		element = q->elementQueue[q->pos_bor];
-		//printf("Check\n");
-		//free(q->elementQueue[q->pos_bor]);
 		q->pos_bor = (q->pos_bor + 1) % q->size;
 		q->n_elem --;
 	}
 	return element;
 }
-
 
 //To check queue state
 int queue_empty(queue *q){

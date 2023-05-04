@@ -12,27 +12,30 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+//Estructura para crear las distintas cuentas bancarias donde se almacena su numero y el dinero que hay en ella
 typedef struct cuentas{
     int id;
     int saldo;
 }cuentas;
 
+//Variables globales
 int max_operaciones = 0;
 int client_numop = 0; //Contador operciones cajero (productor)
 int bank_numop = 0; //Contador operaciones trabajador (consumidor)
 int global_balence = 0; //Dinero del banco
-int max_cuentas = 0;
+int max_cuentas = 0; //Numero máximo de cuentas
 int fin = 0;
-int num_cuentas = 0;
+int num_cuentas = 0; //Numero de cuentas actuales en el banco
 
-//int saldo_cuenta[];
+//Declaración de objetos
 struct element * list_client_ops;
 cuentas *list_cuentas;
 queue *cola;
 
+//Declaración de mutex
 pthread_mutex_t mutex;
 pthread_cond_t no_lleno, no_vacio;
-pthread_attr_t lista;
+
 
 /**
  * Entry point
@@ -41,16 +44,20 @@ pthread_attr_t lista;
  * @return
  */
 
+//Funcion que se encarga de crear las cuentas
 void crear(int id){
     cuentas res;
     int fin = 0, i = 0; 
+
+    //Si ha llegado a la máximo número de cuentas  
     if (num_cuentas == max_cuentas){
         perror("No se pueden crear mas cuentas\n");
         exit(-1);
     }
-    while(fin == 0){
-        
-            
+
+    //Bucle para buscar la posición donde crear la cuenta 
+    while(fin == 0){  
+        //Si encuenta la posición
         if (num_cuentas == i){
             fin = 1;
             res.id = id;
@@ -59,6 +66,8 @@ void crear(int id){
             num_cuentas ++;
             printf("%d CREAR %d SALDO=%d TOTAL=%d\n", bank_numop + 1, list_cuentas[i].id, list_cuentas[i].saldo, global_balence);
         }
+
+        // Si la cuenta ya está creada
         else if (list_cuentas[i].id == id){
             perror("Esta cuenta ya esta creada\n");
             exit(-1);
@@ -68,13 +77,18 @@ void crear(int id){
     
 }
 
+//Función que ingresa el dinero en la cuenta
 void ingresar(int id, int dinero){
     int fin = 0, i = 0; 
+
+    //Bucle que busca la cuenta
     while(fin == 0){
+        //Si la cuenta no existe
         if (num_cuentas == i){
             perror("No existe la cuenta\n");
             return;
         }
+        //Si la encuentra inserta el dinero
         else if (list_cuentas[i].id == id){
             fin = 1;
             list_cuentas[i].saldo = list_cuentas[i].saldo + dinero;
@@ -85,13 +99,18 @@ void ingresar(int id, int dinero){
     }
 }
 
+//Función para retirar el dinero 
 void retirar(int id, int dinero){
     int fin = 0, i = 0; 
+
+    //Bucle para buscar la cuenta
     while(fin == 0){
+        //Si la cuenta no existe
         if (num_cuentas == i){
             perror("No existe la cuenta\n");
             exit(-1);
         }
+        //Si encuentra la cuenta retira el dinero
         else if (list_cuentas[i].id == id){
             fin = 1;
             list_cuentas[i].saldo = list_cuentas[i].saldo - dinero;
@@ -102,13 +121,17 @@ void retirar(int id, int dinero){
     }
 }
 
+//Función para ver el dinero que hay en la cuenta
 void saldo(int id){
-    int fin = 0, i = 0; 
+    int fin = 0, i = 0;
+    //Bucle que busca la cuenta 
     while(fin == 0){
+        //Si la cuenta no existe
         if (num_cuentas == i){
             perror("No existe la cuenta\n");
             exit(-1);
         }
+        //Si encuentra la cuenta
         else if (list_cuentas[i].id == id){
             fin = 1;
             printf("%i SALDO %d SALDO=%d TOTAL=%d\n", bank_numop + 1, list_cuentas[i].id, list_cuentas[i].saldo, global_balence);
@@ -117,88 +140,87 @@ void saldo(int id){
     }
 }
 
+//Función para pasar dinero de una cuenta a otra
 void traspasar(int id1, int id2, int dinero){
     int fin = 0, i = 0, indice = 0, indice2 = 0; 
-    while(fin == 0){
+    //Bucle que busca las dos cuentas
+    while(fin <2 ){
         if (num_cuentas == i){
             perror("No existe la cuenta\n");
             exit(-1);
         }
         else if (list_cuentas[i].id == id1){
-            fin = 1;
+            fin ++;
             indice = i;
         }
-        i ++;
-    }
-    
-    i = 0;
-    fin = 0;
-
-    while(fin == 0){
-        if (num_cuentas == i){
-            perror("No existe la cuenta\n");
-            exit(-1);
-        }
         else if (list_cuentas[i].id == id2){
-            fin = 1;
+            fin ++;
             indice2 = i;
         }
         i ++;
     }
-
+    
+    //Resta el dinero de la primera cuenta
     list_cuentas[indice].saldo = list_cuentas[indice].saldo - dinero;
+    //Suma el dinero en la segunda cuenta
     list_cuentas[indice2].saldo = list_cuentas[indice2].saldo + dinero;
 
     printf("%d TRASPASAR %d %d %d SALDO=%d TOTAL=%d\n", bank_numop + 1, list_cuentas[indice].id, list_cuentas[indice2].id, dinero, list_cuentas[indice2].saldo, global_balence);
 }
 
 
+//Funcion productor
 void cajero(){
-    
     struct element dato;
     struct element* ptr;
+
+    //Bucle que se encarga de producir las distintas ooperaciones
     while(client_numop < max_operaciones){
+        //Inicio de la sección critica
         pthread_mutex_lock(&mutex);
+        //Si la cola esta llena no produce
         while(queue_full(cola) == 0){
             pthread_cond_wait(&no_lleno, &mutex);
         }
+        //Inserta el dato en el buffer
         dato = list_client_ops[client_numop];
-        //printf("Numero de elementos en la cola productor: %d\n", cola->n_elem);
         ptr = (struct element *) malloc(sizeof(struct element));
-        //printf("cajero %p\n", ptr);
-        //ptr = &dato;
         memcpy(ptr, &dato, sizeof(struct element));
-        //printf("cajero 2 %p\n", ptr);
         queue_put(cola, ptr);
+        //Aumenta la variable global y sale del mutex
         client_numop ++;
         pthread_cond_signal(&no_vacio);
         pthread_mutex_unlock(&mutex);
+        //Fin de la sección critica
 
     }
+    //Cuando se terminas las operaciones se manda la señal de despertar a los consumidores que se han quedado bloqueados
     pthread_mutex_lock(&mutex);
     fin=1;
     pthread_cond_broadcast(&no_vacio);
     pthread_mutex_unlock(&mutex);
-    //printf("Cajero\n");
     pthread_exit(0);
 }
 
 void empleado(){
     struct element *dato;
+    //Bucle que consume las operaciones
     while(bank_numop < max_operaciones){
+        //Inicio sección crítica
         pthread_mutex_lock(&mutex);
+        //Si la cola está vacía no se consume
         while(queue_empty(cola) == 0){
-            if (fin==1) {
-                //fprintf(stderr, "Finalizando servicio\n");                    
+            //Si ha acabdo se desbloquea el mutex y se matan a los hilos
+            if (fin==1) {                
                 pthread_mutex_unlock(&mutex);
                 pthread_exit(0);
             }
             pthread_cond_wait(&no_vacio, &mutex);
         }
-        //printf("Numero de elementos en la cola consumidor: %d\n", cola->n_elem);
+        //Se obtiene el dato de la cola
         dato = queue_get(cola);
-        //printf("empleado %p\n", cola);
         
+        //Se llama a la operación correspondiente
         if(strcmp(dato->operacion, "CREAR") == 0){
             crear(dato->num_cuenta);
         }
@@ -223,34 +245,39 @@ void empleado(){
         bank_numop ++;
         pthread_cond_signal(&no_lleno);
         pthread_mutex_unlock(&mutex);
+        //Fin sección crítica
     }
-    //printf("Empleado\n");
     pthread_exit(0);
 }
 
 int main (int argc, const char * argv[] ) {
     int num_cajeros, num_empleados, tam_buff;
     int lectura, i = 0;
-    FILE * f;
-    char str1[20]; 
     int param1;
-
-
+    char str1[20]; 
+    FILE * f;
+    
+    //Comprobación de que la función tiene 6 argumentos
     if (argc != 6) {
         perror("Numero de argumentos incorrecto\n");
         exit(-1);
     }
 
+    //Se abre el fichero con las operaciones y se comprueba si se ha abierto correctamente 
     f = fopen(argv[1], "r");
+
     if (f == NULL){
         perror("Error al abrir el fichero\n");
         exit(-1);
     }
 
+    //Se guardan en variables los argumentos
     num_cajeros = atoi(argv[2]);
     num_empleados = atoi(argv[3]);
     max_cuentas = atoi(argv[4]);
-    tam_buff = atoi(argv[5]); //tam_buff
+    tam_buff = atoi(argv[5]); 
+
+    //Comprobaciones de los argumentos
 
     if (num_cajeros < 1 || num_cajeros > 200 ){
         perror("Numero de cajeros erroneo");
@@ -280,6 +307,7 @@ int main (int argc, const char * argv[] ) {
         perror("Error numero de operaciones incorrecto");
     }
 
+    //Reserva de memoria dinamica
     pthread_t *list_cajeros = (pthread_t *) malloc(num_cajeros * sizeof(pthread_t));
     pthread_t *list_empleados = (pthread_t *) malloc(num_empleados * sizeof(pthread_t));
     
@@ -287,9 +315,8 @@ int main (int argc, const char * argv[] ) {
     list_cuentas = (cuentas *)malloc(max_cuentas * sizeof(cuentas));
 
     int contador = 0;
+    // Bucle que lee el fichero
     while((lectura = fscanf(f, "%s", str1)) > 0 ){
-        //printf("%i\n",i);
-        //struct element elemento;
         int param2 = 0, param3 = 0;
     
         //Check de la operación a realizar
@@ -331,34 +358,29 @@ int main (int argc, const char * argv[] ) {
             list_client_ops[i].elem2 = param3;
         }
         else list_client_ops[i].elem2 = 0;
-        //list_client_ops[i] = elemento;
-        //printf("%s %d %d %d\n", list_client_ops[i].operacion, list_client_ops[i].num_cuenta, list_client_ops[i].elem1, list_client_ops[i].elem2);
         i ++;
         }
+    
+    //Comprobación del número max de operaciones
     if (contador != max_operaciones){
         perror("Numero de operaciones mal indicado");
         exit(-1);
     }
-
-    for (int j = 0; j< max_operaciones; j++){
-        //printf("%s\n",list_client_ops[j].operacion);   
-    }
+    
     //Control de error en la lectura
     if (lectura == 0){
         perror("Error en la lectura");
     }
 
-    //declaracion semaforos
-
+    //Inicialización de los mutex
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&no_lleno,NULL);
     pthread_cond_init(&no_vacio,NULL);
 
-    //pthread_attr_init(&lista);
-
+    //Inicialización de la cola
     cola = queue_init(tam_buff);
     
-
+    //Creacion de los pthread
     for (int i = 0; i< num_cajeros; i++){
         pthread_create(&list_cajeros[i],NULL, (void*)cajero, NULL);
     }
@@ -367,6 +389,7 @@ int main (int argc, const char * argv[] ) {
         pthread_create(&list_empleados[j],NULL, (void*)empleado, NULL);
     }
 
+    //Espera de los pthread
     for (int i = 0; i< num_cajeros; i++){
         pthread_join(list_cajeros[i],NULL);
     }
@@ -375,20 +398,18 @@ int main (int argc, const char * argv[] ) {
         pthread_join(list_empleados[j],NULL);
     }
 
+    //Destrucción del mutex
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&no_lleno);
     pthread_cond_destroy(&no_vacio);
 
-    //pthread_attr_destroy();
-
-    //Borrar semafor
-
+    //Liberar memoria dinámica
     free(list_cajeros);
     free(list_empleados);
     free(list_client_ops);
+    free(list_cuentas);
+
     queue_destroy(cola);
     
-    
-
     return 0;
 }
