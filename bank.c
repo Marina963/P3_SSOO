@@ -66,7 +66,6 @@ void crear(int id){
             num_cuentas ++;
             printf("%d CREAR %d SALDO=%d TOTAL=%d\n", bank_numop + 1, list_cuentas[i].id, list_cuentas[i].saldo, global_balence);
         }
-
         // Si la cuenta ya está creada
         else if (list_cuentas[i].id == id){
             perror("Esta cuenta ya esta creada\n");
@@ -86,7 +85,7 @@ void ingresar(int id, int dinero){
         //Si la cuenta no existe
         if (num_cuentas == i){
             perror("No existe la cuenta\n");
-            return;
+            exit(-1);
         }
         //Si la encuentra inserta el dinero
         else if (list_cuentas[i].id == id){
@@ -159,7 +158,6 @@ void traspasar(int id1, int id2, int dinero){
         }
         i ++;
     }
-    
     //Resta el dinero de la primera cuenta
     list_cuentas[indice].saldo = list_cuentas[indice].saldo - dinero;
     //Suma el dinero en la segunda cuenta
@@ -249,10 +247,6 @@ void empleado(){
         else if (strcmp(dato->operacion, "TRASPASAR") == 0){
             traspasar(dato->num_cuenta, dato->elem1, dato->elem2);
         }
-        else{
-            perror("a");
-        }
-        
 
 		free(dato);
         bank_numop ++;
@@ -298,15 +292,15 @@ int main (int argc, const char * argv[] ) {
     }
 
     if (num_empleados < 1 || num_empleados > 200 ){
-        perror("Numero de cajeros erroneo");
+        perror("Numero de empleados erroneo");
         exit(-1);
     }
     if (tam_buff < 1 ){
-        perror("Numero de cajeros erroneo");
+        perror("Buffer erroneo");
         exit(-1);
     }
     if (max_cuentas < 1 ){
-        perror("Numero de cajeros erroneo");
+        perror("Numero de cuentas erroneo");
         exit(-1);
     }
 
@@ -314,10 +308,12 @@ int main (int argc, const char * argv[] ) {
     fscanf(f, "%d", &max_operaciones);
     if (ferror(f)) {
         perror("Error al leer del fichero\n");
+        exit(-1);
     }
     //max_operaciones = atoi(buffer);
     if (max_operaciones > 200 || max_operaciones < 0){
         perror("Error numero de operaciones incorrecto");
+        exit(-1);
     }
 
     //Reserva de memoria dinamica
